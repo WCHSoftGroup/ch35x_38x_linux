@@ -111,8 +111,8 @@
 /*******************************************************
 WCH driver information
 *******************************************************/
-#define WCH_DRIVER_VERSION "1.28"
-#define WCH_DRIVER_DATE "2026.07"
+#define WCH_DRIVER_VERSION "1.29"
+#define WCH_DRIVER_DATE "2026.11"
 #define WCH_DRIVER_AUTHOR "WCH GROUP"
 #define WCH_DRIVER_DESC "WCH Multi-I/O Board Driver Module"
 
@@ -496,7 +496,7 @@ struct wch_board {
 
 	unsigned int ser_ports;
 	unsigned int ser_port_index;
-    struct parport *pp;
+	struct parport *pp;
 
 	unsigned long bar_addr[WCH_PCICFG_BAR_TOTAL];
 	unsigned int irq;
@@ -593,9 +593,9 @@ struct wch_board {
 #define WCH_UIF_NORMAL_ACTIVE (1 << 29)
 #define WCH_UIF_INITIALIZED (1 << 31)
 
-#define WCH_ENABLE_MS(port, cflag)                                \
-	((port)->flags & WCH_UPF_HARDPPS_CD || (cflag)&CRTSCTS || \
-	 !((cflag)&CLOCAL))
+#define WCH_ENABLE_MS(port, cflag)                                  \
+	((port)->flags & WCH_UPF_HARDPPS_CD || (cflag) & CRTSCTS || \
+	 !((cflag) & CLOCAL))
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0))
 #define WCH_SER_DEVNUM(x) ((x)->index)
@@ -646,6 +646,17 @@ struct ser_driver {
 #endif
 };
 
+struct eeprom {
+	bool is_PCI;
+	struct pci_dev *pdev;
+	unsigned long base;
+};
+
+struct ch35x_38x_io_byte {
+	u8 offset;
+	u8 value;
+} __attribute__((packed));
+
 struct ser_port {
 	spinlock_t lock;
 	void *port_membase;
@@ -688,6 +699,7 @@ struct ser_port {
 	unsigned char ldisc_stop_rx;
 
 	unsigned int setserial_flag;
+	struct eeprom eeprom;
 };
 
 struct ser_state {
