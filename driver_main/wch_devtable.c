@@ -42,7 +42,7 @@ struct pci_board wch_pci_board_conf[] = {
 		},
 	},
 
-    /* CH351_1P */
+	/* CH351_1P */
 	{
 		VENDOR_ID_WCH_CH351,
 		DEVICE_ID_WCH_CH351_2S,

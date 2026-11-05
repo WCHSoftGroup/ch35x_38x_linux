@@ -40,6 +40,7 @@
  * V1.28 - unbind the serial port cards from the built-in serial port driver
  *       - bind the parallel port cards to the parallel port driver
  *       - fix frequency multiplier detection for some serial ports of CH35X series
+ * V1.29 - add support for chip parameter configuration
  */
 
 #include "wch_common.h"
@@ -57,59 +58,79 @@ extern unsigned char ch365_32s;
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0))
 static struct pci_device_id wch_pci_board_id[] = {
-	{ VENDOR_ID_WCH_CH351, DEVICE_ID_WCH_CH351_2S, SUB_VENDOR_ID_WCH_CH351, SUB_DEVICE_ID_WCH_CH351_2S, 0, 0,
+	{ VENDOR_ID_WCH_CH351, DEVICE_ID_WCH_CH351_2S,
+	  SUB_VENDOR_ID_WCH_CH351, SUB_DEVICE_ID_WCH_CH351_2S, 0, 0,
 	  WCH_BOARD_CH351_2S },
-	{ VENDOR_ID_WCH_CH351, DEVICE_ID_WCH_CH351_1P, SUB_VENDOR_ID_WCH_CH351, SUB_DEVICE_ID_WCH_CH351_1P, 0, 0,
+	{ VENDOR_ID_WCH_CH351, DEVICE_ID_WCH_CH351_1P,
+	  SUB_VENDOR_ID_WCH_CH351, SUB_DEVICE_ID_WCH_CH351_1P, 0, 0,
 	  WCH_BOARD_CH351_1P },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH352_2S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH352_2S, 0, 0,
-	  WCH_BOARD_CH352_2S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH352_1S1P, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH352_1S1P, 0, 0,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH352_2S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH352_2S, 0, 0, WCH_BOARD_CH352_2S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH352_1S1P,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH352_1S1P, 0, 0,
 	  WCH_BOARD_CH352_1S1P },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH353_4S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH353_4S, 0, 0,
-	  WCH_BOARD_CH353_4S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH353_2S1P, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH353_2S1P, 0, 0,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH353_4S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH353_4S, 0, 0, WCH_BOARD_CH353_4S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH353_2S1P,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH353_2S1P, 0, 0,
 	  WCH_BOARD_CH353_2S1P },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH353_2S1PAR, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH353_2S1PAR, 0, 0,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH353_2S1PAR,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH353_2S1PAR, 0, 0,
 	  WCH_BOARD_CH353_2S1PAR },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH355_4S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH355_4S, 0, 0,
-	  WCH_BOARD_CH355_4S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH356_4S1P, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH356_4S1P, 0, 0,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH355_4S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH355_4S, 0, 0, WCH_BOARD_CH355_4S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH356_4S1P,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH356_4S1P, 0, 0,
 	  WCH_BOARD_CH356_4S1P },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH356_6S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH356_6S, 0, 0,
-	  WCH_BOARD_CH356_6S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH356_8S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH356_8S, 0, 0,
-	  WCH_BOARD_CH356_8S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH357_4S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH357_4S, 0, 0,
-	  WCH_BOARD_CH357_4S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH358_4S1P, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH358_4S1P, 0, 0,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH356_6S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH356_6S, 0, 0, WCH_BOARD_CH356_6S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH356_8S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH356_8S, 0, 0, WCH_BOARD_CH356_8S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH357_4S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH357_4S, 0, 0, WCH_BOARD_CH357_4S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH358_4S1P,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH358_4S1P, 0, 0,
 	  WCH_BOARD_CH358_4S1P },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH358_8S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH358_8S, 0, 0,
-	  WCH_BOARD_CH358_8S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH359_16S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH359_16S, 0, 0,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH358_8S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH358_8S, 0, 0, WCH_BOARD_CH358_8S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH359_16S,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH359_16S, 0, 0,
 	  WCH_BOARD_CH359_16S },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH382_2S, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH382_2S, 0, 0,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH382_2S,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH382_2S, 0, 0,
 	  WCH_BOARD_CH382_2S },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH382_2S1P, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH382_2S1P, 0, 0,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH382_2S1P,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH382_2S1P, 0, 0,
 	  WCH_BOARD_CH382_2S1P },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH382_1P, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH382_1P, 0, 0,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH382_1P,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH382_1P, 0, 0,
 	  WCH_BOARD_CH382_1P },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_4S, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_4S, 0, 0,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_4S,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_4S, 0, 0,
 	  WCH_BOARD_CH384_4S },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_4S1P, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_4S1P, 0, 0,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_4S1P,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_4S1P, 0, 0,
 	  WCH_BOARD_CH384_4S1P },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_8S, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_8S, 0, 0,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_8S,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_8S, 0, 0,
 	  WCH_BOARD_CH384_8S },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_28S, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_28S, 0, 0,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_28S,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_28S, 0, 0,
 	  WCH_BOARD_CH384_28S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH365_32S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH365_32S, 0, 0,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH365_32S,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH365_32S, 0, 0,
 	  WCH_BOARD_CH365_32S },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_8HS, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_8HS, 0, 0,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_8HS,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_8HS, 0, 0,
 	  WCH_BOARD_CH384_8HS },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_10HS, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_10HS, 0, 0,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_10HS,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_10HS, 0, 0,
 	  WCH_BOARD_CH384_10HS },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_16HS, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_16HS, 0, 0,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_16HS,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_16HS, 0, 0,
 	  WCH_BOARD_CH384_16HS },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_20S, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_20S, 0, 0,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_20S,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_20S, 0, 0,
 	  WCH_BOARD_CH384_20S },
 	{ 0 }
 };
@@ -124,59 +145,79 @@ struct wch_pci_info {
 };
 
 static struct wch_pci_info wch_pci_board_id[] = {
-	{ VENDOR_ID_WCH_CH351, DEVICE_ID_WCH_CH351_2S, SUB_VENDOR_ID_WCH_CH351, SUB_DEVICE_ID_WCH_CH351_2S,
+	{ VENDOR_ID_WCH_CH351, DEVICE_ID_WCH_CH351_2S,
+	  SUB_VENDOR_ID_WCH_CH351, SUB_DEVICE_ID_WCH_CH351_2S,
 	  WCH_BOARD_CH351_2S },
-	{ VENDOR_ID_WCH_CH351, DEVICE_ID_WCH_CH351_1P, SUB_VENDOR_ID_WCH_CH351, SUB_DEVICE_ID_WCH_CH351_1P,
+	{ VENDOR_ID_WCH_CH351, DEVICE_ID_WCH_CH351_1P,
+	  SUB_VENDOR_ID_WCH_CH351, SUB_DEVICE_ID_WCH_CH351_1P,
 	  WCH_BOARD_CH351_1P },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH352_2S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH352_2S,
-	  WCH_BOARD_CH352_2S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH352_1S1P, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH352_1S1P,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH352_2S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH352_2S, WCH_BOARD_CH352_2S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH352_1S1P,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH352_1S1P,
 	  WCH_BOARD_CH352_1S1P },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH353_4S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH353_4S,
-	  WCH_BOARD_CH353_4S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH353_2S1P, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH353_2S1P,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH353_4S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH353_4S, WCH_BOARD_CH353_4S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH353_2S1P,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH353_2S1P,
 	  WCH_BOARD_CH353_2S1P },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH353_2S1PAR, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH353_2S1PAR,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH353_2S1PAR,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH353_2S1PAR,
 	  WCH_BOARD_CH353_2S1PAR },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH355_4S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH355_4S,
-	  WCH_BOARD_CH355_4S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH356_4S1P, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH356_4S1P,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH355_4S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH355_4S, WCH_BOARD_CH355_4S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH356_4S1P,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH356_4S1P,
 	  WCH_BOARD_CH356_4S1P },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH356_6S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH356_6S,
-	  WCH_BOARD_CH356_6S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH356_8S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH356_8S,
-	  WCH_BOARD_CH356_8S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH357_4S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH357_4S,
-	  WCH_BOARD_CH357_4S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH358_4S1P, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH358_4S1P,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH356_6S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH356_6S, WCH_BOARD_CH356_6S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH356_8S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH356_8S, WCH_BOARD_CH356_8S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH357_4S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH357_4S, WCH_BOARD_CH357_4S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH358_4S1P,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH358_4S1P,
 	  WCH_BOARD_CH358_4S1P },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH358_8S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH358_8S,
-	  WCH_BOARD_CH358_8S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH359_16S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH359_16S,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH358_8S, SUB_VENDOR_ID_WCH_PCI,
+	  SUB_DEVICE_ID_WCH_CH358_8S, WCH_BOARD_CH358_8S },
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH359_16S,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH359_16S,
 	  WCH_BOARD_CH359_16S },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH382_2S, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH382_2S,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH382_2S,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH382_2S,
 	  WCH_BOARD_CH382_2S },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH382_2S1P, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH382_2S1P,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH382_2S1P,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH382_2S1P,
 	  WCH_BOARD_CH382_2S1P },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH382_1P, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH382_1P,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH382_1P,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH382_1P,
 	  WCH_BOARD_CH382_1P },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_4S, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_4S,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_4S,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_4S,
 	  WCH_BOARD_CH384_4S },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_4S1P, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_4S1P,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_4S1P,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_4S1P,
 	  WCH_BOARD_CH384_4S1P },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_8S, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_8S,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_8S,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_8S,
 	  WCH_BOARD_CH384_8S },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_28S, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_28S,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_28S,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_28S,
 	  WCH_BOARD_CH384_28S },
-	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH365_32S, SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH365_32S,
+	{ VENDOR_ID_WCH_PCI, DEVICE_ID_WCH_CH365_32S,
+	  SUB_VENDOR_ID_WCH_PCI, SUB_DEVICE_ID_WCH_CH365_32S,
 	  WCH_BOARD_CH365_32S },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_8HS, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_8HS,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_8HS,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_8HS,
 	  WCH_BOARD_CH384_8HS },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_10HS, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_10HS,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_10HS,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_10HS,
 	  WCH_BOARD_CH384_10HS },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_16HS, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_16HS,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_16HS,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_16HS,
 	  WCH_BOARD_CH384_16HS },
-	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_20S, SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_20S,
+	{ VENDOR_ID_WCH_PCIE, DEVICE_ID_WCH_CH384_20S,
+	  SUB_VENDOR_ID_WCH_PCIE, SUB_DEVICE_ID_WCH_CH384_20S,
 	  WCH_BOARD_CH384_20S },
 	{ 0 }
 };
@@ -192,7 +233,8 @@ unsigned char ch365_32s = 0;
 struct kobject *kobj_ref = NULL;
 volatile int reg_dump = 0;
 
-static ssize_t reg_dump_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t reg_dump_show(struct kobject *kobj,
+			     struct kobj_attribute *attr, char *buf)
 {
 	int i, j;
 	unsigned char lcr, dll, dlm, mcr;
@@ -210,7 +252,8 @@ static ssize_t reg_dump_show(struct kobject *kobj, struct kobj_attribute *attr, 
 			for (j = 0; j < sb->ser_ports; j++, sp++) {
 				lcr = inb(sp->port.iobase + UART_LCR);
 
-				outb(lcr | UART_LCR_DLAB, (sp->port.iobase + UART_LCR));
+				outb(lcr | UART_LCR_DLAB,
+				     (sp->port.iobase + UART_LCR));
 				mcr = inb(sp->port.iobase + UART_MCR);
 				dll = inb(sp->port.iobase + UART_DLL);
 				dlm = inb(sp->port.iobase + UART_DLM);
@@ -218,10 +261,16 @@ static ssize_t reg_dump_show(struct kobject *kobj, struct kobj_attribute *attr, 
 				outb(lcr, sp->port.iobase + UART_LCR);
 
 				printk("UART%2d - IER:%02x IIR:%02x LCR:%02x MCR:%02x LSR:%02x MSR:%02x SCR:%02x DLL:%02x DLM:%02x\n",
-				       j + sb->ser_port_index, inb(sp->port.iobase + UART_IER),
-				       inb(sp->port.iobase + UART_IIR), lcr, inb(sp->port.iobase + UART_MCR) | mcr,
-				       inb(sp->port.iobase + UART_LSR), inb(sp->port.iobase + UART_MSR),
-				       inb(sp->port.iobase + UART_SCR), dll, dlm);
+				       j + sb->ser_port_index,
+				       inb(sp->port.iobase + UART_IER),
+				       inb(sp->port.iobase + UART_IIR),
+				       lcr,
+				       inb(sp->port.iobase + UART_MCR) |
+					       mcr,
+				       inb(sp->port.iobase + UART_LSR),
+				       inb(sp->port.iobase + UART_MSR),
+				       inb(sp->port.iobase + UART_SCR),
+				       dll, dlm);
 			}
 		}
 	}
@@ -229,12 +278,15 @@ static ssize_t reg_dump_show(struct kobject *kobj, struct kobj_attribute *attr, 
 	return 0;
 }
 
-static ssize_t reg_dump_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+static ssize_t reg_dump_store(struct kobject *kobj,
+			      struct kobj_attribute *attr, const char *buf,
+			      size_t count)
 {
 	return count;
 }
 
-struct kobj_attribute sysfs_attr = __ATTR(reg_dump, 0664, reg_dump_show, reg_dump_store);
+struct kobj_attribute sysfs_attr =
+	__ATTR(reg_dump, 0664, reg_dump_show, reg_dump_store);
 
 static void wch_pci_create_sysfs(void)
 {
@@ -259,7 +311,8 @@ error_sysfs:
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 18))
 static irqreturn_t wch_interrupt(int irq, void *dev_id)
 #elif (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0))
-static irqreturn_t wch_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+static irqreturn_t wch_interrupt(int irq, void *dev_id,
+				 struct pt_regs *regs)
 #else
 static void wch_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 #endif
@@ -328,20 +381,20 @@ static void wch_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 static int wch_force_remove(struct pci_dev *pdev)
 {
-    struct device *dev = &pdev->dev;
+	struct device *dev = &pdev->dev;
 
-    if (!dev->driver)
-        return 0;
+	if (!dev->driver)
+		return 0;
 
-    printk("WCH: force unbind driver %s\n", dev->driver->name);
+	printk("WCH: force unbind driver %s\n", dev->driver->name);
 
-    device_release_driver(dev);
+	device_release_driver(dev);
 
-    msleep(300);
+	msleep(300);
 
-    printk("WCH: unbind done\n");
+	printk("WCH: unbind done\n");
 
-    return 0;
+	return 0;
 }
 
 static int wch_pci_board_probe(void)
@@ -362,14 +415,17 @@ static int wch_pci_board_probe(void)
 	printk("%s : %s\n", __FILE__, __FUNCTION__);
 #endif
 
-	memset(wch_board_table, 0, WCH_BOARDS_MAX * sizeof(struct wch_board));
+	memset(wch_board_table, 0,
+	       WCH_BOARDS_MAX * sizeof(struct wch_board));
 
 	for (i = 0; i < WCH_BOARDS_MAX; i++) {
 		wch_board_table[i].board_enum = -1;
 		wch_board_table[i].board_number = -1;
 	}
 
-	wch_pci_board_id_cnt = (sizeof(wch_pci_board_id) / sizeof(wch_pci_board_id[0])) - 1;
+	wch_pci_board_id_cnt =
+		(sizeof(wch_pci_board_id) / sizeof(wch_pci_board_id[0])) -
+		1;
 
 	pdev = NULL;
 	table_cnt = 0;
@@ -378,33 +434,42 @@ static int wch_pci_board_probe(void)
 
 	while (table_cnt < wch_pci_board_id_cnt) {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0))
-		pdev = pci_get_device(wch_pci_board_id[table_cnt].vendor, wch_pci_board_id[table_cnt].device, pdev);
+		pdev = pci_get_device(wch_pci_board_id[table_cnt].vendor,
+				      wch_pci_board_id[table_cnt].device,
+				      pdev);
 #else
-		pdev = pci_find_device(wch_pci_board_id[table_cnt].vendor, wch_pci_board_id[table_cnt].device, pdev);
+		pdev = pci_find_device(wch_pci_board_id[table_cnt].vendor,
+				       wch_pci_board_id[table_cnt].device,
+				       pdev);
 #endif
 		if (pdev == NULL) {
 			table_cnt++;
 			continue;
 		}
-		
-        if (pdev->dev.driver) {
-            printk("WCH INFO: PCI device %04x:%04x "
-                   "already bound to driver [%s]\n",
-                   pdev->vendor, pdev->device, pdev->dev.driver->name);
 
-            if (!strcmp(pdev->dev.driver->name, "serial") || !strcmp(pdev->dev.driver->name, "parport_serial") ||
-				!strcmp(pdev->dev.driver->name, "parport_pc")) {
-                wch_force_remove(pdev);
-            }
-        }
+		if (pdev->dev.driver) {
+			printk("WCH INFO: PCI device %04x:%04x "
+			       "already bound to driver [%s]\n",
+			       pdev->vendor, pdev->device,
+			       pdev->dev.driver->name);
 
+			if (!strcmp(pdev->dev.driver->name, "serial") ||
+			    !strcmp(pdev->dev.driver->name,
+				    "parport_serial") ||
+			    !strcmp(pdev->dev.driver->name,
+				    "parport_pc")) {
+				wch_force_remove(pdev);
+			}
+		}
 
-		if ((table_cnt > 0) && ((pdev == pdev_array[0]) || (pdev == pdev_array[1]) || (pdev == pdev_array[2]) ||
-					(pdev == pdev_array[3]))) {
+		if ((table_cnt > 0) &&
+		    ((pdev == pdev_array[0]) || (pdev == pdev_array[1]) ||
+		     (pdev == pdev_array[2]) || (pdev == pdev_array[3]))) {
 			continue;
 		}
 
-		if (wch_pci_board_id[table_cnt].driver_data == WCH_BOARD_CH365_32S) {
+		if (wch_pci_board_id[table_cnt].driver_data ==
+		    WCH_BOARD_CH365_32S) {
 			ch365_32s = 0x01;
 		}
 
@@ -414,13 +479,15 @@ static int wch_pci_board_probe(void)
 		} else {
 			if (sub_device_id == 0) {
 				printk("WCH Error: WCH Board (bus:%d device:%d), in configuration space,\n",
-				       pdev->bus->number, PCI_SLOT(pdev->devfn));
+				       pdev->bus->number,
+				       PCI_SLOT(pdev->devfn));
 				printk("           subdevice id isn't vaild.\n\n");
 				status = -EIO;
 				return status;
 			}
 
-			if (sub_device_id != wch_pci_board_id[table_cnt].subdevice) {
+			if (sub_device_id !=
+			    wch_pci_board_id[table_cnt].subdevice) {
 				continue;
 			}
 		}
@@ -434,7 +501,7 @@ static int wch_pci_board_probe(void)
 			pci_disable_device(pdev);
 #endif
 #endif
-			
+
 			status = pci_enable_device(pdev);
 
 			if (status != 0) {
@@ -443,21 +510,25 @@ static int wch_pci_board_probe(void)
 				return status;
 			}
 
-            if (pdev->vendor == 0x1C00 && pdev->device != 0x2273) {	
-				status = pci_read_config_byte(pdev, 0x04, &val);
+			if (pdev->vendor == 0x1C00 &&
+			    pdev->device != 0x2273) {
+				status = pci_read_config_byte(pdev, 0x04,
+							      &val);
 				if (status != 0) {
 					printk("WCH Error: IO Space Read Fail !\n\n");
 					status = -ENXIO;
 					return status;
 				}
 				if ((val & 0x03) != 0x03) {
-					status = pci_write_config_byte(pdev, 0x04, 0x03);
+					status = pci_write_config_byte(
+						pdev, 0x04, 0x03);
 					if (status != 0) {
 						printk("WCH Error: IO Space Write Fail !\n\n");
 						status = -ENXIO;
 						return status;
 					}
-					status = pci_read_config_byte(pdev, 0x04, &val);
+					status = pci_read_config_byte(
+						pdev, 0x04, &val);
 					if (status != 0 || val != 0x03) {
 						printk("WCH Error: IO Space Restore Fail !\n\n");
 						status = -ENXIO;
@@ -482,7 +553,8 @@ static int wch_pci_board_probe(void)
 		sb->bus_number = pdev->bus->number;
 		sb->dev_number = PCI_SLOT(pdev->devfn);
 
-		sb->board_enum = (int)wch_pci_board_id[table_cnt].driver_data;
+		sb->board_enum =
+			(int)wch_pci_board_id[table_cnt].driver_data;
 		sb->pb_info = wch_pci_board_conf[sb->board_enum];
 
 		sb->board_flag = sb->pb_info.board_flag;
@@ -500,12 +572,13 @@ static int wch_pci_board_probe(void)
 			if (sb->board_enum > 0) {
 				printk("\n");
 				if ((sb->pb_info.num_serport) > 0) {
-					printk("WCH Info : Found WCH %s Series Board (%dS),\n", sb->pb_info.board_name,
+					printk("WCH Info : Found WCH %s Series Board (%dS),\n",
+					       sb->pb_info.board_name,
 					       sb->pb_info.num_serport);
 				}
 
-				printk("           bus number:%d, device number:%d\n\n", sb->bus_number,
-				       sb->dev_number);
+				printk("           bus number:%d, device number:%d\n\n",
+				       sb->bus_number, sb->dev_number);
 			}
 		}
 	}
@@ -532,7 +605,8 @@ static int wch_get_pci_board_conf(void)
 			pdev = sb->pdev;
 			sb->ser_ports = sb->pb_info.num_serport;
 
-			wch_ser_port_total_cnt = wch_ser_port_total_cnt + sb->ser_ports;
+			wch_ser_port_total_cnt =
+				wch_ser_port_total_cnt + sb->ser_ports;
 
 			if (wch_ser_port_total_cnt > WCH_SER_TOTAL_MAX) {
 				printk("WCH Error: Too much serial port, maximum %d ports can be supported !\n\n",
@@ -542,11 +616,14 @@ static int wch_get_pci_board_conf(void)
 			}
 
 			for (j = 0; j < WCH_PCICFG_BAR_TOTAL; j++) {
-				sb->bar_addr[j] = pci_resource_start(pdev, j);
+				sb->bar_addr[j] =
+					pci_resource_start(pdev, j);
 			}
 
-			if ((sb->board_flag & BOARDFLAG_CH365_32_PORTS) == BOARDFLAG_CH365_32_PORTS) {
-				sb->board_membase = ioremap(sb->bar_addr[1], 4096);
+			if ((sb->board_flag & BOARDFLAG_CH365_32_PORTS) ==
+			    BOARDFLAG_CH365_32_PORTS) {
+				sb->board_membase =
+					ioremap(sb->bar_addr[1], 4096);
 				if (!sb->board_membase) {
 					status = -EIO;
 					printk("WCH Error: ioremap failed !\n");
@@ -558,18 +635,22 @@ static int wch_get_pci_board_conf(void)
 			if (sb->irq <= 0) {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 10, 0))
-				status = pci_alloc_irq_vectors(sb->pdev, 1, 1, PCI_IRQ_INTX);
+				status = pci_alloc_irq_vectors(
+					sb->pdev, 1, 1, PCI_IRQ_INTX);
 #else
-				status = pci_alloc_irq_vectors(sb->pdev, 1, 1, PCI_IRQ_LEGACY);
+				status = pci_alloc_irq_vectors(
+					sb->pdev, 1, 1, PCI_IRQ_LEGACY);
 #endif
 				if (status != 1) {
-					printk("pci_alloc_irq_vectors failed, status = %d\n", status);
+					printk("pci_alloc_irq_vectors failed, status = %d\n",
+					       status);
 					status = -EIO;
 					goto exit;
 				}
 				sb->irq = pci_irq_vector(sb->pdev, 0);
 				if (sb->irq <= 0) {
-					printk("pci_irq_vector failed, irq = %d\n", sb->irq);
+					printk("pci_irq_vector failed, irq = %d\n",
+					       sb->irq);
 					status = -EIO;
 					goto exit;
 				} else {
@@ -578,7 +659,8 @@ static int wch_get_pci_board_conf(void)
 				}
 #endif
 				printk("WCH Error: WCH Board %s Series (bus:%d device:%d), in configuartion space, irq isn't valid !\n\n",
-				       sb->pb_info.board_name, sb->bus_number, sb->dev_number);
+				       sb->pb_info.board_name,
+				       sb->bus_number, sb->dev_number);
 
 				status = -EIO;
 				goto exit;
@@ -596,11 +678,13 @@ static void wch_free_pci_board_conf(void)
 {
 	int i = 0;
 	struct wch_board *sb = NULL;
-	
+
 	for (i = 0; i < WCH_BOARDS_MAX; i++) {
 		sb = &wch_board_table[i];
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
 		if (sb->irq_alloced)
 			pci_free_irq_vectors(sb->pdev);
+#endif
 	}
 }
 
@@ -618,7 +702,8 @@ static int wch_assign_resource(void)
 	printk("%s : %s\n", __FILE__, __FUNCTION__);
 #endif
 
-	memset(wch_ser_table, 0, (WCH_SER_TOTAL_MAX + 1) * sizeof(struct wch_ser_port));
+	memset(wch_ser_table, 0,
+	       (WCH_SER_TOTAL_MAX + 1) * sizeof(struct wch_ser_port));
 
 	for (i = 0; i < WCH_BOARDS_MAX; i++) {
 		sb = &wch_board_table[i];
@@ -627,7 +712,8 @@ static int wch_assign_resource(void)
 			if (sb->ser_ports > 0) {
 				sb->vector_mask = 0;
 
-				ser_n = sb->ser_port_index = ser_port_index;
+				ser_n = sb->ser_port_index =
+					ser_port_index;
 
 				sp = &wch_ser_table[ser_n];
 
@@ -637,176 +723,377 @@ static int wch_assign_resource(void)
 					return status;
 				}
 
-				for (j = 0; j < sb->ser_ports; j++, ser_n++, sp++) {
+				for (j = 0; j < sb->ser_ports;
+				     j++, ser_n++, sp++) {
 					mutex_init(&sp->proc_mutex);
 					sp->port.dev = &sb->pdev->dev;
-					sp->port.chip_flag = sb->pb_info.port[j].chip_flag;
+					sp->port.chip_flag =
+						sb->pb_info.port[j]
+							.chip_flag;
 					sp->port.iobase =
-						sb->bar_addr[sb->pb_info.port[j].bar1] + sb->pb_info.port[j].offset1;
+						sb->bar_addr[sb->pb_info
+								     .port[j]
+								     .bar1] +
+						sb->pb_info.port[j].offset1;
 
 					/* use scr reg to test io space */
-					outb(0x55, sp->port.iobase + UART_SCR);
-					if (inb(sp->port.iobase + UART_SCR) != 0x55) {
+					outb(0x55,
+					     sp->port.iobase + UART_SCR);
+					if (inb(sp->port.iobase +
+						UART_SCR) != 0x55) {
 						status = -ENXIO;
 						if (j == 0)
 							printk("WCH Error: pci/pcie address error!\n");
 						else
-							printk("WCH Error: ch432/ch438 communication error(p%d)!\n", j);
+							printk("WCH Error: ch432/ch438 communication error(p%d)!\n",
+							       j);
 						return status;
 					}
 
-					if ((sp->port.chip_flag == WCH_BOARD_CH382_2S ||
-					    sp->port.chip_flag == WCH_BOARD_CH382_2S1P ||
-					    sp->port.chip_flag == WCH_BOARD_CH384_4S ||
-					    sp->port.chip_flag == WCH_BOARD_CH384_4S1P ||
-						sp->port.chip_flag == WCH_BOARD_CH384_28S ||
-					    sp->port.chip_flag == WCH_BOARD_CH351_2S || 
-						sp->port.chip_flag == WCH_BOARD_CH384_8HS ||
-						sp->port.chip_flag == WCH_BOARD_CH384_10HS ||
-						sp->port.chip_flag == WCH_BOARD_CH384_16HS ||
-						sp->port.chip_flag == WCH_BOARD_CH384_20S)) {
+					if ((sp->port.chip_flag ==
+						     WCH_BOARD_CH382_2S ||
+					     sp->port.chip_flag ==
+						     WCH_BOARD_CH382_2S1P ||
+					     sp->port.chip_flag ==
+						     WCH_BOARD_CH384_4S ||
+					     sp->port.chip_flag ==
+						     WCH_BOARD_CH384_4S1P ||
+					     sp->port.chip_flag ==
+						     WCH_BOARD_CH384_28S ||
+					     sp->port.chip_flag ==
+						     WCH_BOARD_CH351_2S ||
+					     sp->port.chip_flag ==
+						     WCH_BOARD_CH384_8HS ||
+					     sp->port.chip_flag ==
+						     WCH_BOARD_CH384_10HS ||
+					     sp->port.chip_flag ==
+						     WCH_BOARD_CH384_16HS ||
+					     sp->port.chip_flag ==
+						     WCH_BOARD_CH384_20S)) {
 						unsigned char cval, mval;
-						
-						cval = inb(sp->port.iobase + UART_LCR);
-						mval = inb(sp->port.iobase + UART_MCR);
-						outb(cval | UART_LCR_DLAB, sp->port.iobase + UART_LCR);
-						if (sb->pb_info.port[j].rs485_enable) {
-							if (sp->port.chip_flag == WCH_BOARD_CH351_2S)
-								outb(mval | BIT(6), sp->port.iobase + UART_MCR);
+
+						cval = inb(
+							sp->port.iobase +
+							UART_LCR);
+						mval = inb(
+							sp->port.iobase +
+							UART_MCR);
+						outb(cval | UART_LCR_DLAB,
+						     sp->port.iobase +
+							     UART_LCR);
+						if (sb->pb_info.port[j]
+							    .rs485_enable) {
+							if (sp->port.chip_flag ==
+							    WCH_BOARD_CH351_2S)
+								outb(mval | BIT(6),
+								     sp->port.iobase +
+									     UART_MCR);
 							else
-								outb(mval | BIT(7), sp->port.iobase + UART_MCR);
+								outb(mval | BIT(7),
+								     sp->port.iobase +
+									     UART_MCR);
 						} else {
-							if (sp->port.chip_flag == WCH_BOARD_CH351_2S)
-								outb(mval & ~BIT(6), sp->port.iobase + UART_MCR);
+							if (sp->port.chip_flag ==
+							    WCH_BOARD_CH351_2S)
+								outb(mval & ~BIT(6),
+								     sp->port.iobase +
+									     UART_MCR);
 							else
-								outb(mval & ~BIT(7), sp->port.iobase + UART_MCR);
+								outb(mval & ~BIT(7),
+								     sp->port.iobase +
+									     UART_MCR);
 						}
-						outb(cval, sp->port.iobase + UART_LCR);
+						outb(cval,
+						     sp->port.iobase +
+							     UART_LCR);
 					}
 
-					if ((sb->board_flag & BOARDFLAG_REMAP) == BOARDFLAG_REMAP) {
+					if ((sb->board_flag &
+					     BOARDFLAG_REMAP) ==
+					    BOARDFLAG_REMAP) {
 						sp->port.vector = 0;
-					} else if ((sb->board_flag & BOARDFLAG_CH384_8_PORTS) ==
+					} else if ((sb->board_flag &
+						    BOARDFLAG_CH384_8_PORTS) ==
 						   BOARDFLAG_CH384_8_PORTS) {
-						sp->port.chip_iobase = sb->bar_addr[sb->pb_info.port[j].bar1];
-						sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-								  sb->pb_info.intr_vector_offset;
-					} else if ((sb->board_flag & BOARDFLAG_CH384_28_PORTS) ==
+						sp->port.chip_iobase =
+							sb->bar_addr
+								[sb->pb_info
+									 .port[j]
+									 .bar1];
+						sp->port.vector =
+							sb->bar_addr
+								[sb->pb_info
+									 .intr_vector_bar] +
+							sb->pb_info
+								.intr_vector_offset;
+					} else if ((sb->board_flag &
+						    BOARDFLAG_CH384_28_PORTS) ==
 						   BOARDFLAG_CH384_28_PORTS) {
-						sp->port.chip_iobase = sb->bar_addr[sb->pb_info.port[j].bar1];
+						sp->port.chip_iobase =
+							sb->bar_addr
+								[sb->pb_info
+									 .port[j]
+									 .bar1];
 						if (j >= 0 && j < 0x04) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset;
-						} else if (j >= 0x04 && j < 0x0C) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset_1;
-						} else if (j >= 0x0C && j < 0x14) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset_2;
-						} else if (j >= 0x14 && j < 0x1C) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset_3;
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset;
+						} else if (j >= 0x04 &&
+							   j < 0x0C) {
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset_1;
+						} else if (j >= 0x0C &&
+							   j < 0x14) {
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset_2;
+						} else if (j >= 0x14 &&
+							   j < 0x1C) {
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset_3;
 						} else {
 						}
-					} else if ((sb->board_flag & BOARDFLAG_CH365_32_PORTS) ==
+					} else if ((sb->board_flag &
+						    BOARDFLAG_CH365_32_PORTS) ==
 						   BOARDFLAG_CH365_32_PORTS) {
-						sp->port.chip_iobase = sb->bar_addr[sb->pb_info.port[j].bar1];
-						sp->port.board_membase = sb->board_membase;
+						sp->port.chip_iobase =
+							sb->bar_addr
+								[sb->pb_info
+									 .port[j]
+									 .bar1];
+						sp->port.board_membase =
+							sb->board_membase;
 						if (j >= 0 && j < 0x08) {
-							if (j >= 0 && j < 0x04) {
+							if (j >= 0 &&
+							    j < 0x04) {
 								sp->port.port_membase =
-									sb->board_membase + 0x100 + j * 0x10;
+									sb->board_membase +
+									0x100 +
+									j * 0x10;
 							}
-							if (j >= 4 && j < 0x08) {
-								sp->port.port_membase = sb->board_membase + 0x100 +
-											0x08 + (j - 4) * 0x10;
-							}
-						}
-						if (j >= 0x08 && j < 0x10) {
-							if (j >= 0x08 && j < 0x0C) {
-								sp->port.port_membase = sb->board_membase + 0x100 +
-											0x80 + (j - 0x08) * 0x10;
-							}
-							if (j >= 0x0C && j < 0x10) {
-								sp->port.port_membase = sb->board_membase + 0x100 +
-											0x80 + 0x08 + (j - 0x0C) * 0x10;
+							if (j >= 4 &&
+							    j < 0x08) {
+								sp->port.port_membase =
+									sb->board_membase +
+									0x100 +
+									0x08 +
+									(j -
+									 4) * 0x10;
 							}
 						}
-						if (j >= 0x10 && j < 0x18) {
-							if (j >= 0x10 && j < 0x14) {
-								sp->port.port_membase = sb->board_membase + 0x100 +
-											0x100 + (j - 0x10) * 0x10;
+						if (j >= 0x08 &&
+						    j < 0x10) {
+							if (j >= 0x08 &&
+							    j < 0x0C) {
+								sp->port.port_membase =
+									sb->board_membase +
+									0x100 +
+									0x80 +
+									(j -
+									 0x08) *
+										0x10;
 							}
-							if (j >= 0x14 && j < 0x18) {
-								sp->port.port_membase = sb->board_membase + 0x100 +
-											0x100 + 0x08 +
-											(j - 0x14) * 0x10;
+							if (j >= 0x0C &&
+							    j < 0x10) {
+								sp->port.port_membase =
+									sb->board_membase +
+									0x100 +
+									0x80 +
+									0x08 +
+									(j -
+									 0x0C) *
+										0x10;
 							}
 						}
-						if (j >= 0x18 && j < 0x20) {
-							if (j >= 0x18 && j < 0x1C) {
-								sp->port.port_membase = sb->board_membase + 0x100 +
-											0x180 + (j - 0x18) * 0x10;
+						if (j >= 0x10 &&
+						    j < 0x18) {
+							if (j >= 0x10 &&
+							    j < 0x14) {
+								sp->port.port_membase =
+									sb->board_membase +
+									0x100 +
+									0x100 +
+									(j -
+									 0x10) *
+										0x10;
 							}
-							if (j >= 0x1C && j < 0x20) {
-								sp->port.port_membase = sb->board_membase + 0x100 +
-											0x180 + 0x08 +
-											(j - 0x1C) * 0x10;
+							if (j >= 0x14 &&
+							    j < 0x18) {
+								sp->port.port_membase =
+									sb->board_membase +
+									0x100 +
+									0x100 +
+									0x08 +
+									(j -
+									 0x14) *
+										0x10;
 							}
 						}
-					} else if ((sb->board_flag & BOARDFLAG_CH384_8H_PORTS) ==
+						if (j >= 0x18 &&
+						    j < 0x20) {
+							if (j >= 0x18 &&
+							    j < 0x1C) {
+								sp->port.port_membase =
+									sb->board_membase +
+									0x100 +
+									0x180 +
+									(j -
+									 0x18) *
+										0x10;
+							}
+							if (j >= 0x1C &&
+							    j < 0x20) {
+								sp->port.port_membase =
+									sb->board_membase +
+									0x100 +
+									0x180 +
+									0x08 +
+									(j -
+									 0x1C) *
+										0x10;
+							}
+						}
+					} else if ((sb->board_flag &
+						    BOARDFLAG_CH384_8H_PORTS) ==
 						   BOARDFLAG_CH384_8H_PORTS) {
-						sp->port.chip_iobase = sb->bar_addr[sb->pb_info.port[j].bar1];
+						sp->port.chip_iobase =
+							sb->bar_addr
+								[sb->pb_info
+									 .port[j]
+									 .bar1];
 						if (j >= 0 && j < 0x04) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset;
-						} else if (j >= 0x04 && j < 0x08) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset_1;
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset;
+						} else if (j >= 0x04 &&
+							   j < 0x08) {
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset_1;
 						}
-					} else if ((sb->board_flag & BOARDFLAG_CH384_10H_PORTS) ==
-						   BOARDFLAG_CH384_10H_PORTS) {
-						sp->port.chip_iobase = sb->bar_addr[sb->pb_info.port[j].bar1];
+					} else if (
+						(sb->board_flag &
+						 BOARDFLAG_CH384_10H_PORTS) ==
+						BOARDFLAG_CH384_10H_PORTS) {
+						sp->port.chip_iobase =
+							sb->bar_addr
+								[sb->pb_info
+									 .port[j]
+									 .bar1];
 						if (j >= 0 && j < 0x04) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset;
-						} else if (j >= 0x04 && j < 0x0A) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset_1;
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset;
+						} else if (j >= 0x04 &&
+							   j < 0x0A) {
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset_1;
 						}
-					} else if ((sb->board_flag & BOARDFLAG_CH384_16H_PORTS) ==
-						   BOARDFLAG_CH384_16H_PORTS) {
-						sp->port.chip_iobase = sb->bar_addr[sb->pb_info.port[j].bar1];
+					} else if (
+						(sb->board_flag &
+						 BOARDFLAG_CH384_16H_PORTS) ==
+						BOARDFLAG_CH384_16H_PORTS) {
+						sp->port.chip_iobase =
+							sb->bar_addr
+								[sb->pb_info
+									 .port[j]
+									 .bar1];
 						if (j >= 0 && j < 0x04) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset;
-						} else if (j >= 0x04 && j < 0x0B) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset_1;
-						} else if (j >= 0x0B && j < 0x10) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset_2;
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset;
+						} else if (j >= 0x04 &&
+							   j < 0x0B) {
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset_1;
+						} else if (j >= 0x0B &&
+							   j < 0x10) {
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset_2;
 						}
-					} else if ((sb->board_flag & BOARDFLAG_CH384_20H_PORTS) ==
-						   BOARDFLAG_CH384_20H_PORTS) {
-						sp->port.chip_iobase = sb->bar_addr[sb->pb_info.port[j].bar1];
+					} else if (
+						(sb->board_flag &
+						 BOARDFLAG_CH384_20H_PORTS) ==
+						BOARDFLAG_CH384_20H_PORTS) {
+						sp->port.chip_iobase =
+							sb->bar_addr
+								[sb->pb_info
+									 .port[j]
+									 .bar1];
 						if (j >= 0 && j < 0x04) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset;
-						} else if (j >= 0x04 && j < 0x0C) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset_1;
-						} else if (j >= 0x0C && j < 0x14) {
-							sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-									  sb->pb_info.intr_vector_offset_2;
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset;
+						} else if (j >= 0x04 &&
+							   j < 0x0C) {
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset_1;
+						} else if (j >= 0x0C &&
+							   j < 0x14) {
+							sp->port.vector =
+								sb->bar_addr
+									[sb->pb_info
+										 .intr_vector_bar] +
+								sb->pb_info
+									.intr_vector_offset_2;
 						}
 					} else {
-						sp->port.vector = sb->bar_addr[sb->pb_info.intr_vector_bar] +
-								  sb->pb_info.intr_vector_offset;
+						sp->port.vector =
+							sb->bar_addr
+								[sb->pb_info
+									 .intr_vector_bar] +
+							sb->pb_info
+								.intr_vector_offset;
 					}
 				}
 				sb->vector_mask = 0xffffffff;
-				ser_port_index = ser_port_index + sb->ser_ports;
+				ser_port_index =
+					ser_port_index + sb->ser_ports;
 			}
 		}
 	}
@@ -852,73 +1139,138 @@ static int wch_ser_port_table_init(void)
 				sp->port.dev_number = sb->dev_number;
 				sp->port.baud_base = CRYSTAL_FREQ * 2 / 16;
 				sp->port.pb_info = sb->pb_info;
-				if (sp->port.chip_flag == WCH_BOARD_CH384_8S) {
+				if (sp->port.chip_flag ==
+				    WCH_BOARD_CH384_8S) {
 					if (n == sb->ser_port_index)
-						sp->port.bext1stport = true;
+						sp->port.bext1stport =
+							true;
 					else
-						sp->port.bext1stport = false;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH384_28S) {
-					if ((n == sb->ser_port_index + 4) || (n == sb->ser_port_index + 12) ||
+						sp->port.bext1stport =
+							false;
+				} else if (sp->port.chip_flag ==
+					   WCH_BOARD_CH384_28S) {
+					if ((n ==
+					     sb->ser_port_index + 4) ||
+					    (n ==
+					     sb->ser_port_index + 12) ||
 					    (n == sb->ser_port_index + 20))
-						sp->port.bext1stport = true;
+						sp->port.bext1stport =
+							true;
 					else
-						sp->port.bext1stport = false;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH384_20S) {
-					if ((n == sb->ser_port_index + 4) || (n == sb->ser_port_index + 12))
-						sp->port.bext1stport = true;
+						sp->port.bext1stport =
+							false;
+				} else if (sp->port.chip_flag ==
+					   WCH_BOARD_CH384_20S) {
+					if ((n ==
+					     sb->ser_port_index + 4) ||
+					    (n == sb->ser_port_index + 12))
+						sp->port.bext1stport =
+							true;
 					else
-						sp->port.bext1stport = false;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH352_1S1P ||
-						sp->port.chip_flag == WCH_BOARD_CH352_2S) {
+						sp->port.bext1stport =
+							false;
+				} else if (sp->port.chip_flag ==
+						   WCH_BOARD_CH352_1S1P ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH352_2S) {
 					sp->port.bext1stport = false;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH353_2S1P ||
-					   sp->port.chip_flag == WCH_BOARD_CH353_2S1PAR ||
-					   sp->port.chip_flag == WCH_BOARD_CH353_4S ||
-					   sp->port.chip_flag == WCH_BOARD_CH355_4S ||
-					   sp->port.chip_flag == WCH_BOARD_CH356_4S1P ||
-					   sp->port.chip_flag == WCH_BOARD_CH356_6S ||
-					   sp->port.chip_flag == WCH_BOARD_CH356_8S ||
-					   sp->port.chip_flag == WCH_BOARD_CH357_4S ||
-					   sp->port.chip_flag == WCH_BOARD_CH358_4S1P ||
-					   sp->port.chip_flag == WCH_BOARD_CH358_8S ||
-					   sp->port.chip_flag == WCH_BOARD_CH359_16S) {
+				} else if (sp->port.chip_flag ==
+						   WCH_BOARD_CH353_2S1P ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH353_2S1PAR ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH353_4S ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH355_4S ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH356_4S1P ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH356_6S ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH356_8S ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH357_4S ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH358_4S1P ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH358_8S ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH359_16S) {
 					u8 cfg_ctl, cfg_stat;
-					pci_read_config_byte(sb->pdev, 0x40, &cfg_ctl);
-					pci_read_config_byte(sb->pdev, 0x41, &cfg_stat);
+					pci_read_config_byte(
+						sb->pdev, 0x40, &cfg_ctl);
+					pci_read_config_byte(
+						sb->pdev, 0x41, &cfg_stat);
 					if (n == sb->ser_port_index) {
-						if (!(cfg_ctl & (1 << 5)) || ((cfg_ctl & (1 << 7)) &&
-							(!(cfg_stat & (1 << 0))))) {
-							sp->port.bext1stport = false;
+						if (!(cfg_ctl &
+						      (1 << 5)) ||
+						    ((cfg_ctl & (1 << 7)) &&
+						     (!(cfg_stat &
+							(1 << 0))))) {
+							sp->port.bext1stport =
+								false;
 						} else {
-							sp->port.bext1stport = true;
+							sp->port.bext1stport =
+								true;
 						}
-					} else if (n == sb->ser_port_index + 8) {
-						sp->port.bext1stport = true;
+					} else if (n ==
+						   sb->ser_port_index +
+							   8) {
+						sp->port.bext1stport =
+							true;
 					} else {
-						sp->port.bext1stport = false;
+						sp->port.bext1stport =
+							false;
 					}
 				}
 
-				if (sp->port.chip_flag == WCH_BOARD_CH351_2S ||
-				    sp->port.chip_flag == WCH_BOARD_CH352_1S1P ||
-				    sp->port.chip_flag == WCH_BOARD_CH352_2S) {
+				if (sp->port.chip_flag ==
+					    WCH_BOARD_CH351_2S ||
+				    sp->port.chip_flag ==
+					    WCH_BOARD_CH352_1S1P ||
+				    sp->port.chip_flag ==
+					    WCH_BOARD_CH352_2S) {
 					if (n == sb->ser_port_index)
-						sp->port.bspe1stport = true;
+						sp->port.bspe1stport =
+							true;
 					else
-						sp->port.bspe1stport = false;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH353_2S1P ||
-					   sp->port.chip_flag == WCH_BOARD_CH353_2S1PAR ||
-					   sp->port.chip_flag == WCH_BOARD_CH353_4S) {
+						sp->port.bspe1stport =
+							false;
+				} else if (sp->port.chip_flag ==
+						   WCH_BOARD_CH353_2S1P ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH353_2S1PAR ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH353_4S) {
 					u8 cfg_ctl;
-					pci_read_config_byte(sb->pdev, 0x40, &cfg_ctl);
-					if ((n == sb->ser_port_index) && !(cfg_ctl & (1 << 5)))
-						sp->port.bspe1stport = true;
-					else if (n == sb->ser_port_index + 2)
-						sp->port.bspe1stport = true;
+					pci_read_config_byte(
+						sb->pdev, 0x40, &cfg_ctl);
+					if ((n == sb->ser_port_index) &&
+					    !(cfg_ctl & (1 << 5)))
+						sp->port.bspe1stport =
+							true;
+					else if (n ==
+						 sb->ser_port_index + 2)
+						sp->port.bspe1stport =
+							true;
 					else
-						sp->port.bspe1stport = false;
+						sp->port.bspe1stport =
+							false;
 				} else {
 					sp->port.bspe1stport = false;
+				}
+
+				if (sp->port.chip_flag >=
+				    WCH_BOARD_CH382_2S) {
+					sp->port.eeprom.is_PCI = false;
+					sp->port.eeprom.pdev = sb->pdev;
+					sp->port.eeprom.base =
+						pci_resource_start(
+							sb->pdev, 0);
+				} else {
+					sp->port.eeprom.is_PCI = true;
+					sp->port.eeprom.pdev = sb->pdev;
+					sp->port.eeprom.base = 0;
 				}
 
 				sp->port.irq = sb->irq;
@@ -933,122 +1285,197 @@ static int wch_ser_port_table_init(void)
 				sp->port.ldisc_stop_rx = 0;
 				spin_lock_init(&sp->port.lock);
 
-				if (sp->port.chip_flag == WCH_BOARD_CH351_2S) {
+				if (sp->port.chip_flag ==
+				    WCH_BOARD_CH351_2S) {
 					sp->port.type = PORT_SER_16550A;
-					sp->port.fifosize = CH351_FIFOSIZE_SET;
-					sp->port.rx_trigger = CH351_TRIGGER_LEVEL_SET;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH352_2S ||
-					   sp->port.chip_flag == WCH_BOARD_CH352_1S1P) {
+					sp->port.fifosize =
+						CH351_FIFOSIZE_SET;
+					sp->port.rx_trigger =
+						CH351_TRIGGER_LEVEL_SET;
+				} else if (sp->port.chip_flag ==
+						   WCH_BOARD_CH352_2S ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH352_1S1P) {
 					sp->port.type = PORT_SER_16550A;
-					sp->port.fifosize = CH352_FIFOSIZE_SET;
-					sp->port.rx_trigger = CH352_TRIGGER_LEVEL_SET;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH353_4S ||
-					   sp->port.chip_flag == WCH_BOARD_CH353_2S1P ||
-					   sp->port.chip_flag == WCH_BOARD_CH353_2S1PAR) {
+					sp->port.fifosize =
+						CH352_FIFOSIZE_SET;
+					sp->port.rx_trigger =
+						CH352_TRIGGER_LEVEL_SET;
+				} else if (sp->port.chip_flag ==
+						   WCH_BOARD_CH353_4S ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH353_2S1P ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH353_2S1PAR) {
 					sp->port.type = PORT_SER_16550A;
-					sp->port.fifosize = CH353_FIFOSIZE_SET;
-					sp->port.rx_trigger = CH353_TRIGGER_LEVEL_SET;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH355_4S) {
+					sp->port.fifosize =
+						CH353_FIFOSIZE_SET;
+					sp->port.rx_trigger =
+						CH353_TRIGGER_LEVEL_SET;
+				} else if (sp->port.chip_flag ==
+					   WCH_BOARD_CH355_4S) {
 					sp->port.type = PORT_SER_16550A;
-					sp->port.fifosize = CH355_FIFOSIZE_SET;
-					sp->port.rx_trigger = CH355_TRIGGER_LEVEL_SET;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH356_4S1P ||
-					   sp->port.chip_flag == WCH_BOARD_CH356_6S ||
-					   sp->port.chip_flag == WCH_BOARD_CH356_8S) {
+					sp->port.fifosize =
+						CH355_FIFOSIZE_SET;
+					sp->port.rx_trigger =
+						CH355_TRIGGER_LEVEL_SET;
+				} else if (sp->port.chip_flag ==
+						   WCH_BOARD_CH356_4S1P ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH356_6S ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH356_8S) {
 					sp->port.type = PORT_SER_16550A;
-					sp->port.fifosize = CH356_FIFOSIZE_SET;
-					sp->port.rx_trigger = CH356_TRIGGER_LEVEL_SET;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH357_4S) {
+					sp->port.fifosize =
+						CH356_FIFOSIZE_SET;
+					sp->port.rx_trigger =
+						CH356_TRIGGER_LEVEL_SET;
+				} else if (sp->port.chip_flag ==
+					   WCH_BOARD_CH357_4S) {
 					sp->port.type = PORT_SER_16750;
-					sp->port.fifosize = CH357_FIFOSIZE_SET;
-					sp->port.rx_trigger = CH357_TRIGGER_LEVEL_SET;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH358_4S1P ||
-					   sp->port.chip_flag == WCH_BOARD_CH358_8S) {
+					sp->port.fifosize =
+						CH357_FIFOSIZE_SET;
+					sp->port.rx_trigger =
+						CH357_TRIGGER_LEVEL_SET;
+				} else if (sp->port.chip_flag ==
+						   WCH_BOARD_CH358_4S1P ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH358_8S) {
 					sp->port.type = PORT_SER_16750;
-					sp->port.fifosize = CH358_FIFOSIZE_SET;
-					sp->port.rx_trigger = CH358_TRIGGER_LEVEL_SET;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH359_16S) {
+					sp->port.fifosize =
+						CH358_FIFOSIZE_SET;
+					sp->port.rx_trigger =
+						CH358_TRIGGER_LEVEL_SET;
+				} else if (sp->port.chip_flag ==
+					   WCH_BOARD_CH359_16S) {
 					sp->port.type = PORT_SER_16750;
-					sp->port.fifosize = CH359_FIFOSIZE_SET;
-					sp->port.rx_trigger = CH359_TRIGGER_LEVEL_SET;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH382_2S ||
-					   sp->port.chip_flag == WCH_BOARD_CH382_2S1P) {
+					sp->port.fifosize =
+						CH359_FIFOSIZE_SET;
+					sp->port.rx_trigger =
+						CH359_TRIGGER_LEVEL_SET;
+				} else if (sp->port.chip_flag ==
+						   WCH_BOARD_CH382_2S ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH382_2S1P) {
 					sp->port.type = PORT_SER_16750;
-					sp->port.fifosize = CH382_FIFOSIZE_SET;
-					sp->port.rx_trigger = CH382_TRIGGER_LEVEL_SET;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH384_4S ||
-					   sp->port.chip_flag == WCH_BOARD_CH384_4S1P) {
+					sp->port.fifosize =
+						CH382_FIFOSIZE_SET;
+					sp->port.rx_trigger =
+						CH382_TRIGGER_LEVEL_SET;
+				} else if (sp->port.chip_flag ==
+						   WCH_BOARD_CH384_4S ||
+					   sp->port.chip_flag ==
+						   WCH_BOARD_CH384_4S1P) {
 					sp->port.type = PORT_SER_16750;
-					sp->port.fifosize = CH384_FIFOSIZE_SET;
-					sp->port.rx_trigger = CH384_TRIGGER_LEVEL_SET;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH384_8S) {
+					sp->port.fifosize =
+						CH384_FIFOSIZE_SET;
+					sp->port.rx_trigger =
+						CH384_TRIGGER_LEVEL_SET;
+				} else if (sp->port.chip_flag ==
+					   WCH_BOARD_CH384_8S) {
 					sp->port.type = PORT_SER_16750;
-					sp->port.fifosize = CH358_FIFOSIZE_SET;
-					sp->port.rx_trigger = CH358_TRIGGER_LEVEL_SET;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH384_28S) {
+					sp->port.fifosize =
+						CH358_FIFOSIZE_SET;
+					sp->port.rx_trigger =
+						CH358_TRIGGER_LEVEL_SET;
+				} else if (sp->port.chip_flag ==
+					   WCH_BOARD_CH384_28S) {
 					sp->port.type = PORT_SER_16750;
 					if (j >= 0 && j < 0x04) {
-						sp->port.fifosize = CH384_FIFOSIZE_SET;
-						sp->port.rx_trigger = CH384_TRIGGER_LEVEL_SET;
+						sp->port.fifosize =
+							CH384_FIFOSIZE_SET;
+						sp->port.rx_trigger =
+							CH384_TRIGGER_LEVEL_SET;
 					} else {
-						sp->port.fifosize = CH358_FIFOSIZE_SET;
-						sp->port.rx_trigger = CH358_TRIGGER_LEVEL_SET;
+						sp->port.fifosize =
+							CH358_FIFOSIZE_SET;
+						sp->port.rx_trigger =
+							CH358_TRIGGER_LEVEL_SET;
 					}
-				} else if (sp->port.chip_flag == WCH_BOARD_CH365_32S) {
+				} else if (sp->port.chip_flag ==
+					   WCH_BOARD_CH365_32S) {
 					sp->port.type = PORT_SER_16750;
-					sp->port.fifosize = CH438_FIFOSIZE_SET;
-					sp->port.rx_trigger = CH438_TRIGGER_LEVEL_SET;
-				} else if (sp->port.chip_flag == WCH_BOARD_CH384_8HS) {
+					sp->port.fifosize =
+						CH438_FIFOSIZE_SET;
+					sp->port.rx_trigger =
+						CH438_TRIGGER_LEVEL_SET;
+				} else if (sp->port.chip_flag ==
+					   WCH_BOARD_CH384_8HS) {
 					sp->port.type = PORT_SER_16750;
 					if (j >= 0 && j < 0x04) {
-						sp->port.fifosize = CH384_FIFOSIZE_SET;
-						sp->port.rx_trigger = CH384_TRIGGER_LEVEL_SET;
+						sp->port.fifosize =
+							CH384_FIFOSIZE_SET;
+						sp->port.rx_trigger =
+							CH384_TRIGGER_LEVEL_SET;
 					} else {
-						sp->port.fifosize = CH358_FIFOSIZE_SET;
-						sp->port.rx_trigger = CH358_TRIGGER_LEVEL_SET;
+						sp->port.fifosize =
+							CH358_FIFOSIZE_SET;
+						sp->port.rx_trigger =
+							CH358_TRIGGER_LEVEL_SET;
 					}
-				} else if (sp->port.chip_flag == WCH_BOARD_CH384_10HS) {
+				} else if (sp->port.chip_flag ==
+					   WCH_BOARD_CH384_10HS) {
 					sp->port.type = PORT_SER_16750;
 					if (j >= 0 && j < 0x04) {
-						sp->port.fifosize = CH384_FIFOSIZE_SET;
-						sp->port.rx_trigger = CH384_TRIGGER_LEVEL_SET;
+						sp->port.fifosize =
+							CH384_FIFOSIZE_SET;
+						sp->port.rx_trigger =
+							CH384_TRIGGER_LEVEL_SET;
 					} else {
-						sp->port.fifosize = CH358_FIFOSIZE_SET;
-						sp->port.rx_trigger = CH358_TRIGGER_LEVEL_SET;
+						sp->port.fifosize =
+							CH358_FIFOSIZE_SET;
+						sp->port.rx_trigger =
+							CH358_TRIGGER_LEVEL_SET;
 					}
-				} else if (sp->port.chip_flag == WCH_BOARD_CH384_16HS) {
+				} else if (sp->port.chip_flag ==
+					   WCH_BOARD_CH384_16HS) {
 					sp->port.type = PORT_SER_16750;
 					if (j >= 0 && j < 0x04) {
-						sp->port.fifosize = CH384_FIFOSIZE_SET;
-						sp->port.rx_trigger = CH384_TRIGGER_LEVEL_SET;
+						sp->port.fifosize =
+							CH384_FIFOSIZE_SET;
+						sp->port.rx_trigger =
+							CH384_TRIGGER_LEVEL_SET;
 					} else {
-						sp->port.fifosize = CH358_FIFOSIZE_SET;
-						sp->port.rx_trigger = CH358_TRIGGER_LEVEL_SET;
+						sp->port.fifosize =
+							CH358_FIFOSIZE_SET;
+						sp->port.rx_trigger =
+							CH358_TRIGGER_LEVEL_SET;
 					}
-				} else if (sp->port.chip_flag == WCH_BOARD_CH384_20S) {
+				} else if (sp->port.chip_flag ==
+					   WCH_BOARD_CH384_20S) {
 					sp->port.type = PORT_SER_16750;
 					if (j >= 0 && j < 0x04) {
-						sp->port.fifosize = CH384_FIFOSIZE_SET;
-						sp->port.rx_trigger = CH384_TRIGGER_LEVEL_SET;
+						sp->port.fifosize =
+							CH384_FIFOSIZE_SET;
+						sp->port.rx_trigger =
+							CH384_TRIGGER_LEVEL_SET;
 					} else {
-						sp->port.fifosize = CH358_FIFOSIZE_SET;
-						sp->port.rx_trigger = CH358_TRIGGER_LEVEL_SET;
+						sp->port.fifosize =
+							CH358_FIFOSIZE_SET;
+						sp->port.rx_trigger =
+							CH358_TRIGGER_LEVEL_SET;
 					}
 				} else {
 					sp->port.type = PORT_SER_16450;
-					sp->port.fifosize = DEFAULT_FIFOSIZE;
-					sp->port.rx_trigger = DEFAULT_TRIGGER_LEVEL;
+					sp->port.fifosize =
+						DEFAULT_FIFOSIZE;
+					sp->port.rx_trigger =
+						DEFAULT_TRIGGER_LEVEL;
 				}
 
-				if ((sb->pb_info.board_flag & BOARDFLAG_REMAP) == BOARDFLAG_REMAP) {
+				if ((sb->pb_info.board_flag &
+				     BOARDFLAG_REMAP) == BOARDFLAG_REMAP) {
 					sp->port.vector_mask = 0;
-					sp->port.port_flag = PORTFLAG_REMAP;
+					sp->port.port_flag =
+						PORTFLAG_REMAP;
 				} else {
-					sp->port.vector_mask = sb->vector_mask;
+					sp->port.vector_mask =
+						sb->vector_mask;
 					sp->port.port_flag = PORTFLAG_NONE;
 				}
 
-				sp->port.setserial_flag = WCH_SER_BAUD_NOTSETSER;
+				sp->port.setserial_flag =
+					WCH_SER_BAUD_NOTSETSER;
 			}
 
 			sb->ser_isr = wch_ser_interrupt;
@@ -1079,7 +1506,8 @@ void wch_debug(void)
 	for (i = 0; i < WCH_BOARDS_MAX; i++) {
 		sb = &wch_board_table[i];
 		if (sb->board_enum != -1) {
-			printk(" name         : %s\n", sb->pb_info.board_name);
+			printk(" name         : %s\n",
+			       sb->pb_info.board_name);
 			printk(" board_enum   : %d\n", sb->board_enum);
 			printk(" board_number : %d\n", sb->board_number);
 			printk(" irq          : %d\n", sb->irq);
@@ -1104,14 +1532,19 @@ void wch_debug(void)
 		sp = &wch_ser_table[j];
 		if (sp->port.iobase) {
 			printk(" number       : %d\n", j);
-			printk(" name         : %s\n", sp->port.pb_info.board_name);
+			printk(" name         : %s\n",
+			       sp->port.pb_info.board_name);
 			printk(" iobase       : 0x%lx\n", sp->port.iobase);
-			printk(" chip_iobase  : 0x%x\n", sp->port.chip_iobase);
+			printk(" chip_iobase  : 0x%x\n",
+			       sp->port.chip_iobase);
 			printk(" irq          : %d\n", sp->port.irq);
 			printk(" vector       : 0x%lx\n", sp->port.vector);
-			printk(" vector_mask  : 0x%x\n", sp->port.vector_mask);
-			printk(" chip_flag    : 0x%x\n", sp->port.chip_flag);
-			printk(" port_flag    : 0x%x\n", sp->port.port_flag);
+			printk(" vector_mask  : 0x%x\n",
+			       sp->port.vector_mask);
+			printk(" chip_flag    : 0x%x\n",
+			       sp->port.chip_flag);
+			printk(" port_flag    : 0x%x\n",
+			       sp->port.port_flag);
 			printk("----------------------------\n");
 		}
 	}
@@ -1131,41 +1564,105 @@ void ch365_32s_test(void)
 	for (i = 0; i < WCH_BOARDS_MAX; i++) {
 		sb = &wch_board_table[i];
 		if (sb->board_enum != -1) {
-			dbg_serial(" ch438_1_uart0 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05));
-			dbg_serial(" ch438_1_uart1 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x08));
-			dbg_serial(" ch438_1_uart2 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x10));
-			dbg_serial(" ch438_1_uart3 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x18));
-			dbg_serial(" ch438_1_uart4 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x20));
-			dbg_serial(" ch438_1_uart5 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x28));
-			dbg_serial(" ch438_1_uart6 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x30));
-			dbg_serial(" ch438_1_uart7 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x38));
+			dbg_serial(
+				" ch438_1_uart0 LSR = %x\n",
+				readb(sb->board_membase + 0x100 + 0x05));
+			dbg_serial(" ch438_1_uart1 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x08));
+			dbg_serial(" ch438_1_uart2 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x10));
+			dbg_serial(" ch438_1_uart3 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x18));
+			dbg_serial(" ch438_1_uart4 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x20));
+			dbg_serial(" ch438_1_uart5 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x28));
+			dbg_serial(" ch438_1_uart6 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x30));
+			dbg_serial(" ch438_1_uart7 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x38));
 			dbg_serial("----------------------------\n");
-			dbg_serial(" ch438_2_uart0 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x80));
-			dbg_serial(" ch438_2_uart1 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x08 + 0x80));
-			dbg_serial(" ch438_2_uart2 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x10 + 0x80));
-			dbg_serial(" ch438_2_uart3 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x18 + 0x80));
-			dbg_serial(" ch438_2_uart4 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x20 + 0x80));
-			dbg_serial(" ch438_2_uart5 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x28 + 0x80));
-			dbg_serial(" ch438_2_uart6 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x30 + 0x80));
-			dbg_serial(" ch438_2_uart7 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x38 + 0x80));
+			dbg_serial(" ch438_2_uart0 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x80));
+			dbg_serial(" ch438_2_uart1 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x08 + 0x80));
+			dbg_serial(" ch438_2_uart2 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x10 + 0x80));
+			dbg_serial(" ch438_2_uart3 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x18 + 0x80));
+			dbg_serial(" ch438_2_uart4 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x20 + 0x80));
+			dbg_serial(" ch438_2_uart5 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x28 + 0x80));
+			dbg_serial(" ch438_2_uart6 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x30 + 0x80));
+			dbg_serial(" ch438_2_uart7 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x38 + 0x80));
 			dbg_serial("----------------------------\n");
-			dbg_serial(" ch438_3_uart0 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x100));
-			dbg_serial(" ch438_3_uart1 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x08 + 0x100));
-			dbg_serial(" ch438_3_uart2 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x10 + 0x100));
-			dbg_serial(" ch438_3_uart3 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x18 + 0x100));
-			dbg_serial(" ch438_3_uart4 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x20 + 0x100));
-			dbg_serial(" ch438_3_uart5 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x28 + 0x100));
-			dbg_serial(" ch438_3_uart6 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x30 + 0x100));
-			dbg_serial(" ch438_3_uart7 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x38 + 0x100));
+			dbg_serial(" ch438_3_uart0 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x100));
+			dbg_serial(" ch438_3_uart1 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x08 + 0x100));
+			dbg_serial(" ch438_3_uart2 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x10 + 0x100));
+			dbg_serial(" ch438_3_uart3 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x18 + 0x100));
+			dbg_serial(" ch438_3_uart4 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x20 + 0x100));
+			dbg_serial(" ch438_3_uart5 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x28 + 0x100));
+			dbg_serial(" ch438_3_uart6 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x30 + 0x100));
+			dbg_serial(" ch438_3_uart7 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x38 + 0x100));
 			dbg_serial("----------------------------\n");
-			dbg_serial(" ch438_4_uart0 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x180));
-			dbg_serial(" ch438_4_uart1 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x08 + 0x180));
-			dbg_serial(" ch438_4_uart2 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x10 + 0x180));
-			dbg_serial(" ch438_4_uart3 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x18 + 0x180));
-			dbg_serial(" ch438_4_uart4 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x20 + 0x180));
-			dbg_serial(" ch438_4_uart5 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x28 + 0x180));
-			dbg_serial(" ch438_4_uart6 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x30 + 0x180));
-			dbg_serial(" ch438_4_uart7 LSR = %x\n", readb(sb->board_membase + 0x100 + 0x05 + 0x38 + 0x180));
+			dbg_serial(" ch438_4_uart0 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x180));
+			dbg_serial(" ch438_4_uart1 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x08 + 0x180));
+			dbg_serial(" ch438_4_uart2 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x10 + 0x180));
+			dbg_serial(" ch438_4_uart3 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x18 + 0x180));
+			dbg_serial(" ch438_4_uart4 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x20 + 0x180));
+			dbg_serial(" ch438_4_uart5 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x28 + 0x180));
+			dbg_serial(" ch438_4_uart6 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x30 + 0x180));
+			dbg_serial(" ch438_4_uart7 LSR = %x\n",
+				   readb(sb->board_membase + 0x100 + 0x05 +
+					 0x38 + 0x180));
 			dbg_serial("----------------------------\n");
 		}
 	}
@@ -1196,37 +1693,49 @@ static int wch_register_irq(void)
 
 		if (sb->board_enum > 0) {
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 18))
-			status = request_irq(sb->irq, wch_interrupt, IRQF_SHARED, "wch", sb);
+			status = request_irq(sb->irq, wch_interrupt,
+					     IRQF_SHARED, "wch", sb);
 #else
-			status = request_irq(sb->irq, wch_interrupt, SA_SHIRQ, "wch", sb);
+			status = request_irq(sb->irq, wch_interrupt,
+					     SA_SHIRQ, "wch", sb);
 #endif
 
 			if (status) {
 				printk("WCH Error: WCH Multi-I/O %s Board(bus:%d device:%d), request\n",
-				       sb->pb_info.board_name, sb->bus_number, sb->dev_number);
-				printk("           IRQ %d fail, IRQ %d may be conflit with another device.\n", sb->irq,
-				       sb->irq);
+				       sb->pb_info.board_name,
+				       sb->bus_number, sb->dev_number);
+				printk("           IRQ %d fail, IRQ %d may be conflit with another device.\n",
+				       sb->irq, sb->irq);
 				return status;
 			}
 		}
 		if (ch365_32s) {
-			outb(inb(sb->bar_addr[0] + 0xF8) & 0xFE, sb->bar_addr[0] + 0xF8);
+			outb(inb(sb->bar_addr[0] + 0xF8) & 0xFE,
+			     sb->bar_addr[0] + 0xF8);
 			/* set read/write plus width 240ns->120ns */
 			outb(((inb(sb->bar_addr[0] + 0xFA) & 0xFB) | 0x03),
 			     sb->bar_addr[0] + 0xFA);
 		}
 
-		if (((sb->board_flag & BOARDFLAG_CH384_8_PORTS) == BOARDFLAG_CH384_8_PORTS) ||
-		    ((sb->board_flag & BOARDFLAG_CH384_28_PORTS) == BOARDFLAG_CH384_28_PORTS) ||
-			((sb->board_flag & BOARDFLAG_CH384_8H_PORTS) == BOARDFLAG_CH384_8H_PORTS) ||
-			((sb->board_flag & BOARDFLAG_CH384_10H_PORTS) == BOARDFLAG_CH384_10H_PORTS) ||
-			((sb->board_flag & BOARDFLAG_CH384_16H_PORTS) == BOARDFLAG_CH384_16H_PORTS) ||
-			((sb->board_flag & BOARDFLAG_CH384_20H_PORTS) == BOARDFLAG_CH384_20H_PORTS)) {
+		if (((sb->board_flag & BOARDFLAG_CH384_8_PORTS) ==
+		     BOARDFLAG_CH384_8_PORTS) ||
+		    ((sb->board_flag & BOARDFLAG_CH384_28_PORTS) ==
+		     BOARDFLAG_CH384_28_PORTS) ||
+		    ((sb->board_flag & BOARDFLAG_CH384_8H_PORTS) ==
+		     BOARDFLAG_CH384_8H_PORTS) ||
+		    ((sb->board_flag & BOARDFLAG_CH384_10H_PORTS) ==
+		     BOARDFLAG_CH384_10H_PORTS) ||
+		    ((sb->board_flag & BOARDFLAG_CH384_16H_PORTS) ==
+		     BOARDFLAG_CH384_16H_PORTS) ||
+		    ((sb->board_flag & BOARDFLAG_CH384_20H_PORTS) ==
+		     BOARDFLAG_CH384_20H_PORTS)) {
 			chip_iobase = sb->bar_addr[0];
 			if (chip_iobase) {
-				outb(inb(chip_iobase + 0xEB) | 0x02 | 0x10, chip_iobase + 0xEB);
+				outb(inb(chip_iobase + 0xEB) | 0x02 | 0x10,
+				     chip_iobase + 0xEB);
 				/* set read/write plus width 120ns->210ns */
-				outb(inb(chip_iobase + 0xFA) | 0x10, chip_iobase + 0xFA);
+				outb(inb(chip_iobase + 0xFA) | 0x10,
+				     chip_iobase + 0xFA);
 			}
 		}
 	}
@@ -1269,17 +1778,25 @@ static void wch_release_irq(void)
 			free_irq(sb->irq, sb);
 		}
 		if (ch365_32s) {
-			outb(inb(sb->bar_addr[0] + 0xF8) | 0x01, sb->bar_addr[0] + 0xF8);
+			outb(inb(sb->bar_addr[0] + 0xF8) | 0x01,
+			     sb->bar_addr[0] + 0xF8);
 		}
-		if (((sb->board_flag & BOARDFLAG_CH384_8_PORTS) == BOARDFLAG_CH384_8_PORTS) ||
-		    ((sb->board_flag & BOARDFLAG_CH384_28_PORTS) == BOARDFLAG_CH384_28_PORTS) ||
-			((sb->board_flag & BOARDFLAG_CH384_8H_PORTS) == BOARDFLAG_CH384_8H_PORTS) ||
-			((sb->board_flag & BOARDFLAG_CH384_10H_PORTS) == BOARDFLAG_CH384_10H_PORTS) ||
-			((sb->board_flag & BOARDFLAG_CH384_16H_PORTS) == BOARDFLAG_CH384_16H_PORTS) ||
-			((sb->board_flag & BOARDFLAG_CH384_20H_PORTS) == BOARDFLAG_CH384_20H_PORTS)) {
+		if (((sb->board_flag & BOARDFLAG_CH384_8_PORTS) ==
+		     BOARDFLAG_CH384_8_PORTS) ||
+		    ((sb->board_flag & BOARDFLAG_CH384_28_PORTS) ==
+		     BOARDFLAG_CH384_28_PORTS) ||
+		    ((sb->board_flag & BOARDFLAG_CH384_8H_PORTS) ==
+		     BOARDFLAG_CH384_8H_PORTS) ||
+		    ((sb->board_flag & BOARDFLAG_CH384_10H_PORTS) ==
+		     BOARDFLAG_CH384_10H_PORTS) ||
+		    ((sb->board_flag & BOARDFLAG_CH384_16H_PORTS) ==
+		     BOARDFLAG_CH384_16H_PORTS) ||
+		    ((sb->board_flag & BOARDFLAG_CH384_20H_PORTS) ==
+		     BOARDFLAG_CH384_20H_PORTS)) {
 			chip_iobase = sb->bar_addr[0];
 			if (chip_iobase)
-				outb(inb(chip_iobase + 0xEB) & 0xFD, chip_iobase + 0xEB);
+				outb(inb(chip_iobase + 0xEB) & 0xFD,
+				     chip_iobase + 0xEB);
 		}
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
 		pci_free_irq_vectors(sb->pdev);
@@ -1296,51 +1813,59 @@ static struct ser_driver wch_ser_reg = {
 #if PARPORT_ENABLE
 static int wch_parport_init(void)
 {
-    struct wch_board *sb;
-    unsigned long par_base;
-    int i;
+	struct wch_board *sb;
+	unsigned long par_base;
+	int i;
 
-    for (i = 0; i < WCH_BOARDS_MAX; ++i) {
-        sb = &wch_board_table[i];
+	for (i = 0; i < WCH_BOARDS_MAX; ++i) {
+		sb = &wch_board_table[i];
 
-        if (sb->board_enum <= 0) {
-            continue;
-        }
+		if (sb->board_enum <= 0) {
+			continue;
+		}
 
-        if (sb->board_enum != WCH_BOARD_CH351_1P && sb->board_enum != WCH_BOARD_CH352_1S1P &&
-            sb->board_enum != WCH_BOARD_CH353_2S1P && sb->board_enum != WCH_BOARD_CH353_2S1PAR &&
-            sb->board_enum != WCH_BOARD_CH356_4S1P && sb->board_enum != WCH_BOARD_CH358_4S1P &&
-            sb->board_enum != WCH_BOARD_CH382_2S1P && sb->board_enum != WCH_BOARD_CH382_1P &&
+		if (sb->board_enum != WCH_BOARD_CH351_1P &&
+		    sb->board_enum != WCH_BOARD_CH352_1S1P &&
+		    sb->board_enum != WCH_BOARD_CH353_2S1P &&
+		    sb->board_enum != WCH_BOARD_CH353_2S1PAR &&
+		    sb->board_enum != WCH_BOARD_CH356_4S1P &&
+		    sb->board_enum != WCH_BOARD_CH358_4S1P &&
+		    sb->board_enum != WCH_BOARD_CH382_2S1P &&
+		    sb->board_enum != WCH_BOARD_CH382_1P &&
 		    sb->board_enum != WCH_BOARD_CH384_4S1P) {
-            continue;
-        }
+			continue;
+		}
 
-        par_base = sb->bar_addr[2];
-        sb->pp = parport_pc_probe_port(par_base, 0, PARPORT_IRQ_NONE, PARPORT_DMA_NONE, &sb->pdev->dev, 0);
-        if (!sb->pp) {
-		    printk("WCH DBG: board %s BAR0=0x%lx BAR1=0x%lx BAR2=0x%lx irq=%u\n", sb->pb_info.board_name,
-        		sb->bar_addr[0], sb->bar_addr[1], sb->bar_addr[2], sb->irq);
-            printk("WCH Error: parport probe failed\n");
-            return -ENODEV;
-        }
-    }
+		par_base = sb->bar_addr[2];
+		sb->pp = parport_pc_probe_port(par_base, 0,
+					       PARPORT_IRQ_NONE,
+					       PARPORT_DMA_NONE,
+					       &sb->pdev->dev, 0);
+		if (!sb->pp) {
+			printk("WCH DBG: board %s BAR0=0x%lx BAR1=0x%lx BAR2=0x%lx irq=%u\n",
+			       sb->pb_info.board_name, sb->bar_addr[0],
+			       sb->bar_addr[1], sb->bar_addr[2], sb->irq);
+			printk("WCH Error: parport probe failed\n");
+			return -ENODEV;
+		}
+	}
 
-    return 0;
+	return 0;
 }
 
 static void wch_parport_exit(void)
 {
-    struct wch_board *sb;
-    int i;
+	struct wch_board *sb;
+	int i;
 
-    for (i = 0; i < WCH_BOARDS_MAX; i++) {
-        sb = &wch_board_table[i];
-        if (!sb->pp)
-            continue;
+	for (i = 0; i < WCH_BOARDS_MAX; i++) {
+		sb = &wch_board_table[i];
+		if (!sb->pp)
+			continue;
 
-        parport_pc_unregister_port(sb->pp);
-        sb->pp = NULL;
-    }
+		parport_pc_unregister_port(sb->pp);
+		sb->pp = NULL;
+	}
 }
 #endif
 
@@ -1352,8 +1877,10 @@ static int __init wch_init(void)
 	printk("=====================  WCH Device Driver Module Install  =====================\n");
 	printk("\n");
 	printk("WCH Info : Loading WCH Multi-I/O Board Driver Module\n");
-	printk("                                                       -- Date : %s\n", WCH_DRIVER_DATE);
-	printk("                                                       -- Version : %s\n\n", WCH_DRIVER_VERSION);
+	printk("                                                       -- Date : %s\n",
+	       WCH_DRIVER_DATE);
+	printk("                                                       -- Version : %s\n\n",
+	       WCH_DRIVER_VERSION);
 
 	wch_ser_port_total_cnt = 0;
 
@@ -1385,22 +1912,23 @@ static int __init wch_init(void)
 		goto step1_fail;
 	}
 	printk("------------------->pci register irq success\n");
+	if (wch_ser_port_total_cnt > 0) {
+		status = wch_ser_register_driver(&wch_ser_reg);
+		if (status != 0) {
+			goto step2_fail;
+		}
+		printk("------------------->ser register driver success\n");
 
-	status = wch_ser_register_driver(&wch_ser_reg);
-	if (status != 0) {
-		goto step2_fail;
-	}
-	printk("------------------->ser register driver success\n");
-
-	status = wch_ser_register_ports(&wch_ser_reg);
-	if (status != 0) {
-		goto step3_fail;
+		status = wch_ser_register_ports(&wch_ser_reg);
+		if (status != 0) {
+			goto step3_fail;
+		}
 	}
 #if PARPORT_ENABLE
-    status = wch_parport_init();
-    if (status != 0)
-        goto step4_fail;
-    printk("------------------->parport init success\n");
+	status = wch_parport_init();
+	if (status != 0)
+		goto step4_fail;
+	printk("------------------->parport init success\n");
 #endif
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25))
@@ -1417,7 +1945,7 @@ static int __init wch_init(void)
 
 #if PARPORT_ENABLE
 step4_fail:
-    wch_parport_exit();
+	wch_parport_exit();
 #endif
 step3_fail:
 	wch_ser_unregister_driver(&wch_ser_reg);
@@ -1450,8 +1978,8 @@ static void __exit wch_exit(void)
 	wch_ser_unregister_driver(&wch_ser_reg);
 	printk("***********wch_ser_unregister_driver_success***********\n");
 #if PARPORT_ENABLE
-    wch_parport_exit();
-    printk("***********wch_parport_exit_success***********\n");
+	wch_parport_exit();
+	printk("***********wch_parport_exit_success***********\n");
 #endif
 	wch_iounmap();
 	wch_release_irq();
